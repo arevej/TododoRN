@@ -45,19 +45,24 @@ function ListItem({
 }) {
   return (
     <Swiper
-      isSwipeableRight
+      onLeftSwipeRelease={onDone}
+      onRightSwipeRelease={onDone}
       onSwiped={onSwiped}
-      onDone={onDone}
-      leftButton={
-        <Swiper.Button color="green" icon="ios-checkmark" onPress={onDelete} />
-      }
-      rightButton={
+      leftButtons={[
+        <Swiper.Button color="green" icon="ios-checkmark" onPress={onDelete} />,
+      ]}
+      rightButtons={[
         <Swiper.Button
           color="red"
           icon="ios-close-outline"
           onPress={onDelete}
-        />
-      }
+        />,
+        <Swiper.Button
+          color="black"
+          icon="ios-close-outline"
+          onPress={onDelete}
+        />,
+      ]}
     >
       <View style={{ flex: 1, backgroundColor: '#fff' }}>
         <View style={styles.listItem}>

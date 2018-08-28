@@ -7,9 +7,11 @@ import {
   PanResponder,
   Vibration,
 } from 'react-native';
+import { Haptic } from 'expo';
 import { Ionicons } from '@expo/vector-icons';
 
-const SWIPE_BUTTON_WIDTH = 60;
+const BUTTON_WIDTH = 60;
+
 export default class Swiper extends React.Component {
   _av: Animated.Value = new Animated.Value(0);
 
@@ -34,13 +36,17 @@ export default class Swiper extends React.Component {
     },
 
     onPanResponderMove: (evt, gestureState) => {
+      const SWIPE_LEFT_BUTTON_WIDTH =
+        BUTTON_WIDTH * this.props.rightButtons.length;
+      const SWIPE_RIGHT_BUTTON_WIDTH =
+        BUTTON_WIDTH * this.props.leftButtons.length;
       let diffX = this.state.diffX;
       if (gestureState.dx < 0) {
-        diffX = Math.max(gestureState.dx, -SWIPE_BUTTON_WIDTH);
+        diffX = Math.max(gestureState.dx, -SWIPE_LEFT_BUTTON_WIDTH);
       } else if (this.state.diffX < 0 && gestureState.dx > 0) {
         diffX = diffX + gestureState.dx;
-      } else if (this.props.isSwipeableRight && gestureState.dx > 0) {
-        diffX = Math.min(gestureState.dx, SWIPE_BUTTON_WIDTH);
+      } else if (gestureState.dx > 0) {
+        diffX = Math.min(gestureState.dx, SWIPE_RIGHT_BUTTON_WIDTH);
       }
       this.setState({ diffX });
       Animated.timing(this._av, {
@@ -50,15 +56,42 @@ export default class Swiper extends React.Component {
     },
     onPanResponderTerminationRequest: (evt, gestureState) => false,
     onPanResponderRelease: (evt, gestureState) => {
+      const SWIPE_LEFT_BUTTON_WIDTH =
+        BUTTON_WIDTH * this.props.leftButtons.length;
+      const SWIPE_RIGHT_BUTTON_WIDTH =
+        BUTTON_WIDTH * this.props.rightButtons.length;
+      const shouldLeftButtonReleaseOnSwipe =
+        this.props.onLeftSwipeRelease != null;
+      const shouldRightButtonReleaseOnSwipe =
+        this.props.onRightSwipeRelease != null;
       let diffX;
-      if (gestureState.dx < -SWIPE_BUTTON_WIDTH / 0.7) {
-        diffX = -SWIPE_BUTTON_WIDTH;
-      } else if (
-        this.props.isSwipeableRight &&
-        gestureState.dx > SWIPE_BUTTON_WIDTH * 3
+
+      const SWIPE_STICK_THRESHOLD = 0.7;
+      const RELEASE_THRESHOLD = 10;
+
+      if (
+        !shouldRightButtonReleaseOnSwipe &&
+        gestureState.dx < -SWIPE_LEFT_BUTTON_WIDTH / SWIPE_STICK_THRESHOLD
       ) {
-        this.props.onDone();
-        Vibration.vibrate();
+        diffX = -SWIPE_LEFT_BUTTON_WIDTH;
+      } else if (
+        !shouldLeftButtonReleaseOnSwipe &&
+        gestureState.dx > SWIPE_RIGHT_BUTTON_WIDTH / SWIPE_STICK_THRESHOLD
+      ) {
+        diffX = SWIPE_RIGHT_BUTTON_WIDTH;
+      } else if (
+        shouldLeftButtonReleaseOnSwipe &&
+        gestureState.dx > SWIPE_LEFT_BUTTON_WIDTH + RELEASE_THRESHOLD
+      ) {
+        Haptic.impact(Haptic.ImpactStyles.Light);
+        this.props.onLeftSwipeRelease();
+        diffX = 0;
+      } else if (
+        shouldRightButtonReleaseOnSwipe &&
+        gestureState.dx < -SWIPE_RIGHT_BUTTON_WIDTH + RELEASE_THRESHOLD
+      ) {
+        Haptic.impact(Haptic.ImpactStyles.Light);
+        this.props.onRightSwipeRelease();
         diffX = 0;
       } else {
         diffX = 0;
@@ -95,7 +128,7 @@ export default class Swiper extends React.Component {
             zIndex: 1,
           }}
         >
-          {this.props.leftButton}
+          {this.props.leftButtons}
         </View>
         <Animated.View
           {...this._panResponder.panHandlers}
@@ -122,7 +155,7 @@ export default class Swiper extends React.Component {
             zIndex: 1,
           }}
         >
-          {this.props.rightButton}
+          {this.props.rightButtons}
         </View>
       </View>
     );
@@ -134,7 +167,7 @@ function SwiperButton({ icon, color, onPress }) {
     <TouchableWithoutFeedback onPress={onPress}>
       <View
         style={{
-          width: 60,
+          width: BUTTON_WIDTH,
           backgroundColor: color,
           justifyContent: 'center',
           alignItems: 'center',
