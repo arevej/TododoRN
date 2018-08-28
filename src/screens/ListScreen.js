@@ -45,7 +45,12 @@ function ListItem({
 }) {
   return (
     <Swiper
+      isSwipeableRight
       onSwiped={onSwiped}
+      onDone={onDone}
+      leftButton={
+        <Swiper.Button color="green" icon="ios-checkmark" onPress={onDelete} />
+      }
       rightButton={
         <Swiper.Button
           color="red"

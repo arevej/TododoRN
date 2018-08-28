@@ -5,6 +5,7 @@ import {
   TouchableWithoutFeedback,
   Animated,
   PanResponder,
+  Vibration,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
@@ -20,7 +21,7 @@ export default class Swiper extends React.Component {
     onStartShouldSetPanResponder: (evt, gestureState) => true,
     onMoveShouldSetPanResponder: (evt, gestureState) => gestureState.dx < 0,
     onStartShouldSetPanResponderCapture: (evt, gestureState) => {
-      return false;
+      return true;
     },
     onMoveShouldSetPanResponderCapture: (evt, gestureState) => {
       return true;
@@ -38,6 +39,8 @@ export default class Swiper extends React.Component {
         diffX = Math.max(gestureState.dx, -SWIPE_BUTTON_WIDTH);
       } else if (this.state.diffX < 0 && gestureState.dx > 0) {
         diffX = diffX + gestureState.dx;
+      } else if (this.props.isSwipeableRight && gestureState.dx > 0) {
+        diffX = Math.min(gestureState.dx, SWIPE_BUTTON_WIDTH);
       }
       this.setState({ diffX });
       Animated.timing(this._av, {
@@ -50,6 +53,13 @@ export default class Swiper extends React.Component {
       let diffX;
       if (gestureState.dx < -SWIPE_BUTTON_WIDTH / 0.7) {
         diffX = -SWIPE_BUTTON_WIDTH;
+      } else if (
+        this.props.isSwipeableRight &&
+        gestureState.dx > SWIPE_BUTTON_WIDTH * 3
+      ) {
+        this.props.onDone();
+        Vibration.vibrate();
+        diffX = 0;
       } else {
         diffX = 0;
       }
@@ -73,6 +83,20 @@ export default class Swiper extends React.Component {
   render() {
     return (
       <View>
+        <View
+          style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            flexDirection: 'row',
+            justifyContent: 'flex-start',
+            zIndex: 1,
+          }}
+        >
+          {this.props.leftButton}
+        </View>
         <Animated.View
           {...this._panResponder.panHandlers}
           style={{
